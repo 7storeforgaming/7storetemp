@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Steam Temp Mail</title>
+  <style>
+    body { font-family: sans-serif; padding: 30px; background: #f2f2f2; }
+    input, button { padding: 10px; margin: 5px; }
+    #output { background: white; padding: 15px; margin-top: 20px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>📨 Steam Temp Mail Viewer</h1>
+  <p>Enter your temp mail:</p>
+  <input id="email" type="text" placeholder="e.g., steam-123@yourdomain.com" size="40" />
+  <button onclick="checkInbox()">Check Inbox</button>
+  <div id="output">No messages yet.</div>
+
+  <script>
+    async function checkInbox() {
+      const email = document.getElementById("email").value;
+      document.getElementById("output").innerHTML = "⏳ Loading inbox for " + email + "...";
+
+      // Replace with your actual backend API
+      const response = await fetch(`https://yourbackend.com/inbox?email=${email}`);
+      const data = await response.json();
+
+      if (data.messages.length === 0) {
+        document.getElementById("output").innerHTML = "📭 No emails found.";
+      } else {
+        document.getElementById("output").innerHTML = data.messages.map(msg =>
+          `<b>Subject:</b> ${msg.subject}<br><b>From:</b> ${msg.from}<br><pre>${msg.body}</pre><hr>`
+        ).join("");
+      }
+    }
+  </script>
+</body>
+</html>
