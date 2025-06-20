@@ -107,7 +107,7 @@
     // Called when user clicks Generate Random Alias
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
-      const randomAlias = `7store-${rand}`;
+      const randomAlias = `${rand}`;
       // Just fill input, do NOT auto-set email so user can edit if wanted
       document.getElementById("custom-alias").value = randomAlias;
       // Optional: clear previous inbox and temp email display until user clicks set
