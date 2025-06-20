@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Steam Temp Mail</title>
   <style>
     body {
@@ -27,6 +27,7 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 150px;
     }
     .email {
       margin-bottom: 20px;
@@ -46,6 +47,7 @@
       margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      box-sizing: border-box;
     }
     button {
       padding: 10px 20px;
@@ -55,6 +57,8 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
     }
     button:hover {
       background-color: #0056b3;
@@ -66,10 +70,10 @@
   <h1>📨 Steam Temp Mail</h1>
 
   <div id="email-box">
-    <input type="text" id="custom-alias" placeholder="Enter alias (e.g. steam-john)">
-    <button onclick="generateRandom()">🎲 Random Alias</button>
-    <button onclick="setEmail()">✔️ Set & Refresh Inbox</button>
-    <p><strong>Full temp email address:</strong> <span id="temp-email" style="font-size: 1.1em; color: #007bff;"></span></p>
+    <input type="text" id="custom-alias" placeholder="Enter alias (e.g. steam-john)" />
+    <button id="random-btn">🎲 Generate Random Alias</button>
+    <button id="set-email-btn">✔️ Set & Refresh Inbox</button>
+    <p><strong>Full temp email address:</strong> <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span></p>
   </div>
 
   <div id="inbox">
@@ -79,6 +83,7 @@
   <script>
     let currentTempEmail = "";
 
+    // Called when user clicks Set & Refresh Inbox
     function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
 
@@ -87,9 +92,11 @@
         return;
       }
 
+      // If user entered full email with @, use as is
       if (aliasInput.includes("@")) {
         currentTempEmail = aliasInput;
       } else {
+        // Otherwise append default domain
         currentTempEmail = aliasInput + "@7store.shop";
       }
 
@@ -97,13 +104,18 @@
       checkInbox();
     }
 
+    // Called when user clicks Generate Random Alias
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
       const randomAlias = `steam-${rand}`;
+      // Just fill input, do NOT auto-set email so user can edit if wanted
       document.getElementById("custom-alias").value = randomAlias;
-      setEmail(); // auto-set after generating
+      // Optional: clear previous inbox and temp email display until user clicks set
+      document.getElementById("temp-email").textContent = "—";
+      document.getElementById("inbox").innerHTML = "<p>Edit the alias if you want, then click 'Set & Refresh Inbox' to load emails.</p>";
     }
 
+    // Fetch inbox emails from backend API
     async function checkInbox() {
       const inboxDiv = document.getElementById("inbox");
 
@@ -116,6 +128,9 @@
 
       try {
         const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         console.log(data);
 
@@ -128,11 +143,11 @@
         for (const msg of data.messages) {
           html += `
             <div class="email">
-              <strong>Subject:</strong> ${msg.subject}<br>
-              <strong>From:</strong> ${msg.from}<br>
-              <strong>To:</strong> ${msg.to}<br>
+              <strong>Subject:</strong> ${escapeHtml(msg.subject)}<br>
+              <strong>From:</strong> ${escapeHtml(msg.from)}<br>
+              <strong>To:</strong> ${escapeHtml(msg.to)}<br>
               <strong>Body:</strong>
-              <pre>${msg.body}</pre>
+              <pre>${escapeHtml(msg.body)}</pre>
             </div>
           `;
         }
@@ -144,6 +159,21 @@
         console.error(err);
       }
     }
+
+    // Simple escape function to avoid XSS from email content display
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Attach event listeners on buttons after DOM loaded
+    document.getElementById("random-btn").addEventListener("click", generateRandom);
+    document.getElementById("set-email-btn").addEventListener("click", setEmail);
   </script>
 
 </body>
