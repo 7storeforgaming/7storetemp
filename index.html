@@ -39,9 +39,17 @@
       white-space: pre-wrap;
       border-radius: 5px;
     }
+    input {
+      padding: 10px;
+      width: 100%;
+      font-size: 1em;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
     button {
       padding: 10px 20px;
-      margin-top: 10px;
+      margin: 5px 10px 5px 0;
       background-color: #007bff;
       color: white;
       border: none;
@@ -58,32 +66,59 @@
   <h1>📨 Steam Temp Mail</h1>
 
   <div id="email-box">
-    <p><strong>Your temp email address:</strong></p>
-    <p><span id="temp-email" style="font-size: 1.2em; color: #007bff;"></span></p>
-    <button onclick="checkInbox()">🔁 Refresh Inbox</button>
+    <input type="text" id="custom-alias" placeholder="Enter alias (e.g. steam-john)">
+    <button onclick="generateRandom()">🎲 Random Alias</button>
+    <button onclick="setEmail()">✔️ Set & Refresh Inbox</button>
+    <p><strong>Full temp email address:</strong> <span id="temp-email" style="font-size: 1.1em; color: #007bff;"></span></p>
   </div>
 
   <div id="inbox">
-    <p>Loading inbox...</p>
+    <p>Enter an alias above or generate a random one.</p>
   </div>
 
   <script>
     let currentTempEmail = "";
 
-    function generateTempEmail() {
-      const rand = Math.random().toString(36).substring(2, 10);
-      currentTempEmail = `steam-${rand}@7store.shop`;
+    function setEmail() {
+      const aliasInput = document.getElementById("custom-alias").value.trim();
+
+      if (!aliasInput) {
+        alert("Please enter an alias or generate one.");
+        return;
+      }
+
+      if (aliasInput.includes("@")) {
+        currentTempEmail = aliasInput;
+      } else {
+        currentTempEmail = aliasInput + "@7store.shop";
+      }
+
       document.getElementById("temp-email").textContent = currentTempEmail;
+      checkInbox();
+    }
+
+    function generateRandom() {
+      const rand = Math.random().toString(36).substring(2, 10);
+      const randomAlias = `steam-${rand}`;
+      document.getElementById("custom-alias").value = randomAlias;
+      setEmail(); // auto-set after generating
     }
 
     async function checkInbox() {
       const inboxDiv = document.getElementById("inbox");
+
+      if (!currentTempEmail) {
+        inboxDiv.innerHTML = "⚠️ Please set your temp email first.";
+        return;
+      }
+
       inboxDiv.innerHTML = "⏳ Checking inbox for " + currentTempEmail + "...";
 
       try {
         const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
         const data = await response.json();
         console.log(data);
+
         if (!data.messages || data.messages.length === 0) {
           inboxDiv.innerHTML = "📭 No emails received yet.";
           return;
@@ -109,12 +144,6 @@
         console.error(err);
       }
     }
-
-    // Initialize
-    window.onload = () => {
-      generateTempEmail();
-      checkInbox();
-    };
   </script>
 
 </body>
