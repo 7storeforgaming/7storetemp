@@ -63,6 +63,12 @@
     button:hover {
       background-color: #0056b3;
     }
+    #copy-btn {
+      background-color: #28a745;
+    }
+    #copy-btn:hover {
+      background-color: #1e7e34;
+    }
   </style>
 </head>
 <body>
@@ -73,7 +79,11 @@
     <input type="text" id="custom-alias" placeholder="Enter alias (e.g. 7store-837g4343)" />
     <button id="random-btn">🎲 Generate Random Alias</button>
     <button id="set-email-btn">✔️ Set & Refresh Inbox</button>
-    <p><strong>Full temp email address:</strong> <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span></p>
+    <p>
+      <strong>Full temp email address:</strong> 
+      <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span>
+      <button id="copy-btn" title="Copy email" style="display:none;">📋 Copy</button>
+    </p>
   </div>
 
   <div id="inbox">
@@ -92,15 +102,18 @@
         return;
       }
 
-      // If user entered full email with @, use as is
       if (aliasInput.includes("@")) {
         currentTempEmail = aliasInput;
       } else {
-        // Otherwise append default domain
         currentTempEmail = aliasInput + "@7store.shop";
       }
 
-      document.getElementById("temp-email").textContent = currentTempEmail;
+      const tempEmailSpan = document.getElementById("temp-email");
+      tempEmailSpan.textContent = currentTempEmail;
+
+      // Show copy button now that we have an email
+      document.getElementById("copy-btn").style.display = "inline-block";
+
       checkInbox();
     }
 
@@ -108,11 +121,13 @@
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
       const randomAlias = `${rand}`;
-      // Just fill input, do NOT auto-set email so user can edit if wanted
       document.getElementById("custom-alias").value = randomAlias;
-      // Optional: clear previous inbox and temp email display until user clicks set
       document.getElementById("temp-email").textContent = "—";
       document.getElementById("inbox").innerHTML = "<p>Edit the alias if you want, then click 'Set & Refresh Inbox' to load emails.</p>";
+
+      // Hide copy button because no valid email yet
+      document.getElementById("copy-btn").style.display = "none";
+      currentTempEmail = "";
     }
 
     // Fetch inbox emails from backend API
@@ -132,7 +147,6 @@
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log(data);
 
         if (!data.messages || data.messages.length === 0) {
           inboxDiv.innerHTML = "📭 No emails received yet.";
@@ -160,7 +174,17 @@
       }
     }
 
-    // Simple escape function to avoid XSS from email content display
+    // Copy email to clipboard
+    function copyEmail() {
+      if (!currentTempEmail) return;
+      navigator.clipboard.writeText(currentTempEmail).then(() => {
+        alert("Copied email: " + currentTempEmail);
+      }).catch(() => {
+        alert("Failed to copy email. Try manually.");
+      });
+    }
+
+    // Escape HTML to avoid XSS
     function escapeHtml(text) {
       if (!text) return "";
       return text
@@ -171,9 +195,10 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Attach event listeners on buttons after DOM loaded
+    // Event listeners
     document.getElementById("random-btn").addEventListener("click", generateRandom);
     document.getElementById("set-email-btn").addEventListener("click", setEmail);
+    document.getElementById("copy-btn").addEventListener("click", copyEmail);
   </script>
 
 </body>
