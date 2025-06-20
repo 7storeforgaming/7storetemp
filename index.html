@@ -34,6 +34,12 @@
       border-bottom: 1px solid #ddd;
       padding-bottom: 10px;
     }
+    .body-content {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fafafa;
+      border-radius: 6px;
+    }
     pre {
       background: #f0f0f0;
       padding: 10px;
@@ -93,44 +99,31 @@
   <script>
     let currentTempEmail = "";
 
-    // Called when user clicks Set & Refresh Inbox
     function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
-
       if (!aliasInput) {
         alert("Please enter an alias or generate one.");
         return;
       }
 
-      if (aliasInput.includes("@")) {
-        currentTempEmail = aliasInput;
-      } else {
-        currentTempEmail = aliasInput + "@7store.shop";
-      }
+      currentTempEmail = aliasInput.includes("@")
+        ? aliasInput
+        : aliasInput + "@7store.shop";
 
-      const tempEmailSpan = document.getElementById("temp-email");
-      tempEmailSpan.textContent = currentTempEmail;
-
-      // Show copy button now that we have an email
+      document.getElementById("temp-email").textContent = currentTempEmail;
       document.getElementById("copy-btn").style.display = "inline-block";
-
       checkInbox();
     }
 
-    // Called when user clicks Generate Random Alias
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
-      const randomAlias = `${rand}`;
-      document.getElementById("custom-alias").value = randomAlias;
+      document.getElementById("custom-alias").value = rand;
       document.getElementById("temp-email").textContent = "—";
       document.getElementById("inbox").innerHTML = "<p>Edit the alias if you want, then click 'Set & Refresh Inbox' to load emails.</p>";
-
-      // Hide copy button because no valid email yet
       document.getElementById("copy-btn").style.display = "none";
       currentTempEmail = "";
     }
 
-    // Fetch inbox emails from backend API
     async function checkInbox() {
       const inboxDiv = document.getElementById("inbox");
 
@@ -143,9 +136,7 @@
 
       try {
         const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
 
         if (!data.messages || data.messages.length === 0) {
@@ -155,36 +146,38 @@
 
         let html = "";
         for (const msg of data.messages) {
+          const escapedSubject = escapeHtml(msg.subject);
+          const escapedFrom = escapeHtml(msg.from);
+          const escapedTo = escapeHtml(msg.to);
+          const isHtml = msg.content_type === "text/html";
+
           html += `
             <div class="email">
-              <strong>Subject:</strong> ${escapeHtml(msg.subject)}<br>
-              <strong>From:</strong> ${escapeHtml(msg.from)}<br>
-              <strong>To:</strong> ${escapeHtml(msg.to)}<br>
-              <strong>Body:</strong>
-              <pre>${escapeHtml(msg.body)}</pre>
+              <strong>Subject:</strong> ${escapedSubject}<br>
+              <strong>From:</strong> ${escapedFrom}<br>
+              <strong>To:</strong> ${escapedTo}<br>
+              <strong>Body:</strong><br>
+              <div class="body-content">
+                ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
+              </div>
             </div>
           `;
         }
 
         inboxDiv.innerHTML = html;
-
       } catch (err) {
         inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
         console.error(err);
       }
     }
 
-    // Copy email to clipboard
     function copyEmail() {
       if (!currentTempEmail) return;
-      navigator.clipboard.writeText(currentTempEmail).then(() => {
-        alert("Copied email: " + currentTempEmail);
-      }).catch(() => {
-        alert("Failed to copy email. Try manually.");
-      });
+      navigator.clipboard.writeText(currentTempEmail)
+        .then(() => alert("Copied email: " + currentTempEmail))
+        .catch(() => alert("Failed to copy email. Try manually."));
     }
 
-    // Escape HTML to avoid XSS
     function escapeHtml(text) {
       if (!text) return "";
       return text
@@ -195,7 +188,6 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Event listeners
     document.getElementById("random-btn").addEventListener("click", generateRandom);
     document.getElementById("set-email-btn").addEventListener("click", setEmail);
     document.getElementById("copy-btn").addEventListener("click", copyEmail);
