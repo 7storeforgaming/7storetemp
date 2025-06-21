@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Steam Temp Mail</title>
+  <meta charset="UTF-8" />
+  <title>7Store Mailer</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -27,11 +27,18 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 150px;
     }
     .email {
       margin-bottom: 20px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 10px;
+    }
+    .body-content {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fafafa;
+      border-radius: 6px;
     }
     pre {
       background: #f0f0f0;
@@ -46,6 +53,7 @@
       margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      box-sizing: border-box;
     }
     button {
       padding: 10px 20px;
@@ -55,21 +63,33 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
     }
     button:hover {
       background-color: #0056b3;
+    }
+    #copy-btn {
+      background-color: #28a745;
+    }
+    #copy-btn:hover {
+      background-color: #1e7e34;
     }
   </style>
 </head>
 <body>
 
-  <h1>📨 Steam Temp Mail</h1>
+  <h1>📨 7store Mailer</h1>
 
   <div id="email-box">
-    <input type="text" id="custom-alias" placeholder="Enter alias (e.g. steam-john)">
-    <button onclick="generateRandom()">🎲 Random Alias</button>
-    <button onclick="setEmail()">✔️ Set & Refresh Inbox</button>
-    <p><strong>Full temp email address:</strong> <span id="temp-email" style="font-size: 1.1em; color: #007bff;"></span></p>
+    <input type="text" id="custom-alias" placeholder="Enter alias (e.g. 7store-837g4343)" />
+    <button id="random-btn">🎲 Generate Random Alias</button>
+    <button id="set-email-btn">✔️ Set & Refresh Inbox</button>
+    <p>
+      <strong>Full temp email address:</strong> 
+      <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span>
+      <button id="copy-btn" title="Copy email" style="display:none;">📋 Copy</button>
+    </p>
   </div>
 
   <div id="inbox">
@@ -81,27 +101,27 @@
 
     function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
-
       if (!aliasInput) {
         alert("Please enter an alias or generate one.");
         return;
       }
 
-      if (aliasInput.includes("@")) {
-        currentTempEmail = aliasInput;
-      } else {
-        currentTempEmail = aliasInput + "@7store.shop";
-      }
+      currentTempEmail = aliasInput.includes("@")
+        ? aliasInput
+        : aliasInput + "@7store.shop";
 
       document.getElementById("temp-email").textContent = currentTempEmail;
+      document.getElementById("copy-btn").style.display = "inline-block";
       checkInbox();
     }
 
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
-      const randomAlias = `steam-${rand}`;
-      document.getElementById("custom-alias").value = randomAlias;
-      setEmail(); // auto-set after generating
+      document.getElementById("custom-alias").value = rand;
+      document.getElementById("temp-email").textContent = "—";
+      document.getElementById("inbox").innerHTML = "<p>Edit the alias if you want, then click 'Set & Refresh Inbox' to load emails.</p>";
+      document.getElementById("copy-btn").style.display = "none";
+      currentTempEmail = "";
     }
 
     async function checkInbox() {
@@ -116,8 +136,8 @@
 
       try {
         const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        console.log(data);
 
         if (!data.messages || data.messages.length === 0) {
           inboxDiv.innerHTML = "📭 No emails received yet.";
@@ -126,24 +146,51 @@
 
         let html = "";
         for (const msg of data.messages) {
+          const escapedSubject = escapeHtml(msg.subject);
+          const escapedFrom = escapeHtml(msg.from);
+          const escapedTo = escapeHtml(msg.to);
+          const isHtml = msg.content_type === "text/html";
+
           html += `
             <div class="email">
-              <strong>Subject:</strong> ${msg.subject}<br>
-              <strong>From:</strong> ${msg.from}<br>
-              <strong>To:</strong> ${msg.to}<br>
-              <strong>Body:</strong>
-              <pre>${msg.body}</pre>
+              <strong>Subject:</strong> ${escapedSubject}<br>
+              <strong>From:</strong> ${escapedFrom}<br>
+              <strong>To:</strong> ${escapedTo}<br>
+              <strong>Body:</strong><br>
+              <div class="body-content">
+                ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
+              </div>
             </div>
           `;
         }
 
         inboxDiv.innerHTML = html;
-
       } catch (err) {
         inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
         console.error(err);
       }
     }
+
+    function copyEmail() {
+      if (!currentTempEmail) return;
+      navigator.clipboard.writeText(currentTempEmail)
+        .then(() => alert("Copied email: " + currentTempEmail))
+        .catch(() => alert("Failed to copy email. Try manually."));
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    document.getElementById("random-btn").addEventListener("click", generateRandom);
+    document.getElementById("set-email-btn").addEventListener("click", setEmail);
+    document.getElementById("copy-btn").addEventListener("click", copyEmail);
   </script>
 
 </body>
