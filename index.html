@@ -175,6 +175,13 @@
           const escapedSubject = escapeHtml(msg.subject);
           const escapedFrom = escapeHtml(msg.from);
           const escapedTo = escapeHtml(msg.to);
+          const emailDate = msg.date ? new Date(msg.date) : null;
+          const formattedDate = emailDate
+            ? emailDate.toLocaleString(undefined, {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+              })
+            : "Unknown";
           const isHtml = msg.content_type === "text/html";
 
           html += `
@@ -182,6 +189,7 @@
               <strong>Subject:</strong> ${escapedSubject}<br>
               <strong>From:</strong> ${escapedFrom}<br>
               <strong>To:</strong> ${escapedTo}<br>
+              <strong>Date:</strong> ${formattedDate}<br>
               <strong>Body:</strong><br>
               <div class="body-content">
                 ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
