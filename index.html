@@ -87,21 +87,6 @@
     #copy-btn:hover {
       background-color: #1e7e34;
     }
-
-    /* Spinner CSS */
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -169,24 +154,10 @@
         return;
       }
 
-      // Show spinner while loading
-      inboxDiv.innerHTML = '<div class="spinner"></div>';
-
-      const spinnerMinTime = 5000;
-      const startTime = Date.now();
-
       try {
-        const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const response = await fetch(https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)});
+        if (!response.ok) throw new Error(HTTP error! status: ${response.status});
         const data = await response.json();
-
-        const elapsed = Date.now() - startTime;
-        const remaining = spinnerMinTime - elapsed;
-
-        // Wait to ensure spinner shows at least 5 seconds
-        if (remaining > 0) {
-          await new Promise(r => setTimeout(r, remaining));
-        }
 
         if (!data.messages || data.messages.length === 0) {
           inboxDiv.innerHTML = "📭 No emails received yet.";
@@ -213,7 +184,7 @@
             : "Unknown";
           const isHtml = msg.content_type === "text/html";
 
-          html += `
+          html += 
             <div class="email flash">
               <strong>Subject:</strong> ${escapedSubject}<br>
               <strong>From:</strong> ${escapedFrom}<br>
@@ -221,19 +192,14 @@
               <strong>Date:</strong> ${formattedDate}<br>
               <strong>Body:</strong><br>
               <div class="body-content">
-                ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
+                ${isHtml ? msg.body : <pre>${escapeHtml(msg.body)}</pre>}
               </div>
             </div>
-          `;
+          ;
         }
 
-        inboxDiv.innerHTML = html;  // Spinner replaced fully with emails here
+        inboxDiv.innerHTML = html;
       } catch (err) {
-        const elapsed = Date.now() - startTime;
-        const remaining = spinnerMinTime - elapsed;
-        if (remaining > 0) {
-          await new Promise(r => setTimeout(r, remaining));
-        }
         inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
         console.error(err);
       }
