@@ -33,18 +33,6 @@
       margin-bottom: 20px;
       border-bottom: 1px solid #ddd;
       padding-bottom: 10px;
-      animation: fadeIn 0.3s ease-in;
-    }
-    .email.flash {
-      animation: flash 1s ease-in-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes flash {
-      0% { background-color: #fff7e6; }
-      100% { background-color: white; }
     }
     .body-content {
       margin-top: 10px;
@@ -105,16 +93,11 @@
   </div>
 
   <div id="inbox">
-    <p>Waiting for emails!</p>
+    <p>Enter an alias above or generate a random one.</p>
   </div>
-
-  <!-- 🔊 Notification Sound -->
-  <audio id="notify-sound" src="https://notificationsounds.com/storage/sounds/file-sounds-1152-pristine.mp3" preload="auto"></audio>
 
   <script>
     let currentTempEmail = "";
-    let inboxInterval = null;
-    let lastMessageCount = 0;
 
     function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
@@ -130,9 +113,6 @@
       document.getElementById("temp-email").textContent = currentTempEmail;
       document.getElementById("copy-btn").style.display = "inline-block";
       checkInbox();
-
-      if (inboxInterval) clearInterval(inboxInterval);
-      inboxInterval = setInterval(checkInbox, 10000);
     }
 
     function generateRandom() {
@@ -142,8 +122,6 @@
       document.getElementById("inbox").innerHTML = "<p>Edit the alias if you want, then click 'Set & Refresh Inbox' to load emails.</p>";
       document.getElementById("copy-btn").style.display = "none";
       currentTempEmail = "";
-      lastMessageCount = 0;
-      if (inboxInterval) clearInterval(inboxInterval);
     }
 
     async function checkInbox() {
@@ -154,48 +132,36 @@
         return;
       }
 
+      inboxDiv.innerHTML = "⏳ Checking inbox for " + currentTempEmail + "...";
+
       try {
-        const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const response = await fetch(https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)});
+        if (!response.ok) throw new Error(HTTP error! status: ${response.status});
         const data = await response.json();
 
         if (!data.messages || data.messages.length === 0) {
           inboxDiv.innerHTML = "📭 No emails received yet.";
-          lastMessageCount = 0;
           return;
         }
-
-        if (data.messages.length > lastMessageCount) {
-          document.getElementById("notify-sound").play().catch(() => {});
-        }
-        lastMessageCount = data.messages.length;
 
         let html = "";
         for (const msg of data.messages) {
           const escapedSubject = escapeHtml(msg.subject);
           const escapedFrom = escapeHtml(msg.from);
           const escapedTo = escapeHtml(msg.to);
-          const emailDate = msg.date ? new Date(msg.date) : null;
-          const formattedDate = emailDate
-            ? emailDate.toLocaleString(undefined, {
-                day: '2-digit', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-              })
-            : "Unknown";
           const isHtml = msg.content_type === "text/html";
 
-          html += `
-            <div class="email flash">
+          html += 
+            <div class="email">
               <strong>Subject:</strong> ${escapedSubject}<br>
               <strong>From:</strong> ${escapedFrom}<br>
               <strong>To:</strong> ${escapedTo}<br>
-              <strong>Date:</strong> ${formattedDate}<br>
               <strong>Body:</strong><br>
               <div class="body-content">
-                ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
+                ${isHtml ? msg.body : <pre>${escapeHtml(msg.body)}</pre>}
               </div>
             </div>
-          `;
+          ;
         }
 
         inboxDiv.innerHTML = html;
