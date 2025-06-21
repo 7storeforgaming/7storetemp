@@ -135,7 +135,7 @@
       inboxDiv.innerHTML = "⏳ Checking inbox for " + currentTempEmail + "...";
 
       try {
-        const response = await fetch(https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)});
+        const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
         if (!response.ok) throw new Error(HTTP error! status: ${response.status});
         const data = await response.json();
 
