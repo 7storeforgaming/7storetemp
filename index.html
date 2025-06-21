@@ -87,6 +87,21 @@
     #copy-btn:hover {
       background-color: #1e7e34;
     }
+
+    /* Spinner CSS */
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -96,7 +111,7 @@
   <div id="email-box">
     <input type="text" id="custom-alias" placeholder="Enter alias (e.g. 7store-837g4343)" />
     <button id="random-btn">🎲 Generate Random Alias</button>
-    <button id="set-email-btn">✔️ Set & Refresh Inbox</button>
+    <button id="set-email-btn">✔️ Set </button>
     <p>
       <strong>Full temp email address:</strong> 
       <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span>
@@ -153,6 +168,9 @@
         inboxDiv.innerHTML = "⚠️ Please set your temp email first.";
         return;
       }
+
+      // Show spinner while loading
+      inboxDiv.innerHTML = '<div class="spinner"></div>';
 
       try {
         const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
