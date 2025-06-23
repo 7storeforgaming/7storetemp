@@ -173,6 +173,11 @@ function playBeep() {
 }
 
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 async function checkInbox() {
   document.title = "Messages ("+messages_count+")";
   if (!currentTempEmail) {
@@ -247,17 +252,21 @@ async function checkInbox() {
           ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
         </div>
       `;
-
+      
       inboxDiv.insertBefore(emailDiv, inboxDiv.firstChild);
-
+      
       messages_count=inboxDiv.children.length;
-      console.log(inboxDiv.children.length)
+
       if (first_scan == true){
         continue
 
       }
 
       playBeep();
+
+      document.title = "You have received new email!";
+      await sleep(4000);
+
     }
 
     first_scan = false;
