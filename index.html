@@ -112,7 +112,7 @@
 
       document.getElementById("temp-email").textContent = currentTempEmail;
       document.getElementById("copy-btn").style.display = "inline-block";
-      //checkInbox();
+      checkInbox();
     }
 
     function generateRandom() {
@@ -126,9 +126,6 @@
 
     async function checkInbox() {
 
-      while (true){
-
-      
       const inboxDiv = document.getElementById("inbox");
 
       if (!currentTempEmail) {
@@ -176,7 +173,7 @@
         console.error(err);
       }
     }
-      }
+      
 
     function copyEmail() {
       if (!currentTempEmail) return;
@@ -198,8 +195,7 @@
     document.getElementById("random-btn").addEventListener("click", generateRandom);
     document.getElementById("set-email-btn").addEventListener("click", setEmail);
     document.getElementById("copy-btn").addEventListener("click", copyEmail);
-    
-    checkInbox();
+
   </script>
 
 </body>
