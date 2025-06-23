@@ -99,7 +99,7 @@
   <script>
     let currentTempEmail = "";
 
-    async function setEmail() {
+    function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
       if (!aliasInput) {
         alert("Please enter an alias or generate one.");
@@ -112,7 +112,7 @@
 
       document.getElementById("temp-email").textContent = currentTempEmail;
       document.getElementById("copy-btn").style.display = "inline-block";
-      checkInbox();
+      //checkInbox();
     }
 
     function generateRandom() {
@@ -125,6 +125,10 @@
     }
 
     async function checkInbox() {
+
+      while (true){
+
+      
       const inboxDiv = document.getElementById("inbox");
 
       if (!currentTempEmail) {
@@ -165,11 +169,14 @@
         }
 
         inboxDiv.innerHTML = html;
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (err) {
         inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
         console.error(err);
       }
     }
+      }
 
     function copyEmail() {
       if (!currentTempEmail) return;
@@ -191,6 +198,8 @@
     document.getElementById("random-btn").addEventListener("click", generateRandom);
     document.getElementById("set-email-btn").addEventListener("click", setEmail);
     document.getElementById("copy-btn").addEventListener("click", copyEmail);
+    
+    checkInbox();
   </script>
 
 </body>
