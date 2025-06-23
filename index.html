@@ -99,7 +99,7 @@
   <script>
     let currentTempEmail = "";
 
-    function setEmail() {
+    async function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
       if (!aliasInput) {
         alert("Please enter an alias or generate one.");
