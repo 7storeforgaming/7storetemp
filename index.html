@@ -97,25 +97,34 @@
   </div>
 
   <script>
+    let inboxDiv = document.getElementById("inbox");
     let messages_count =  0
     const displayedMessageIds = new Set(); // Keep track of already shown messages
     let currentTempEmail = "";
     let first_scan = true;
     function setEmail() {
-      const aliasInput = document.getElementById("custom-alias").value.trim();
-      if (!aliasInput) {
-        alert("Please enter an alias or generate one.");
-        return;
-      }
+      messages_count = 0;
+      first_scan = true;
+  const aliasInput = document.getElementById("custom-alias").value.trim();
+  if (!aliasInput) {
+    alert("Please enter an alias or generate one.");
+    return;
+  }
 
-      currentTempEmail = aliasInput.includes("@")
-        ? aliasInput
-        : aliasInput + "@7store.shop";
+  currentTempEmail = aliasInput.includes("@")
+    ? aliasInput
+    : aliasInput + "@7store.shop";
 
-      document.getElementById("temp-email").textContent = currentTempEmail;
-      document.getElementById("copy-btn").style.display = "inline-block";
-      //checkInbox();
-    }
+  document.getElementById("temp-email").textContent = currentTempEmail;
+  document.getElementById("copy-btn").style.display = "inline-block";
+
+  const oldEmails = inboxDiv.querySelectorAll(".email");
+  oldEmails.forEach(el => el.remove());
+
+  // 🧹 Optionally reset state
+  displayedMessageIds.clear?.(); // if it's a Set
+  // or displayedMessageIds = new Set(); if needed
+}
 
     function generateRandom() {
       const rand = Math.random().toString(36).substring(2, 10);
@@ -165,7 +174,6 @@ function playBeep() {
 
 
 async function checkInbox() {
-  const inboxDiv = document.getElementById("inbox");
   document.title = "Messages ("+messages_count+")";
   if (!currentTempEmail) {
     // Don't remove previous content if email is not set
@@ -243,7 +251,7 @@ async function checkInbox() {
       inboxDiv.insertBefore(emailDiv, inboxDiv.firstChild);
 
       messages_count=inboxDiv.children.length;
-      
+      console.log(inboxDiv.children.length)
       if (first_scan == true){
         continue
 
