@@ -167,7 +167,6 @@
 
         inboxDiv.innerHTML = html;
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (err) {
         inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
         console.error(err);
