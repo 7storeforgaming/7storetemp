@@ -89,16 +89,18 @@
       <strong>Full temp email address:</strong> 
       <span id="temp-email" style="font-size: 1.1em; color: #007bff;">—</span>
       <button id="copy-btn" title="Copy email" style="display:none;">📋 Copy</button>
+      
     </p>
   </div>
 
   <div id="inbox">
-    <p>Enter an alias above or generate a random one.</p>
   </div>
 
   <script>
+    let messages_count =  0
+    const displayedMessageIds = new Set(); // Keep track of already shown messages
     let currentTempEmail = "";
-
+    let first_scan = true;
     function setEmail() {
       const aliasInput = document.getElementById("custom-alias").value.trim();
       if (!aliasInput) {
@@ -112,7 +114,7 @@
 
       document.getElementById("temp-email").textContent = currentTempEmail;
       document.getElementById("copy-btn").style.display = "inline-block";
-      checkInbox();
+      //checkInbox();
     }
 
     function generateRandom() {
@@ -124,54 +126,141 @@
       currentTempEmail = "";
     }
 
-    async function checkInbox() {
+    
+  function hashString(str) {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  // Convert to unsigned 32-bit hex string
+  return (hash >>> 0).toString(16);
+}
 
-      const inboxDiv = document.getElementById("inbox");
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
-      if (!currentTempEmail) {
-        inboxDiv.innerHTML = "⚠️ Please set your temp email first.";
-        return;
-      }
+    oscillator.type = 'sine'; // sine wave beep
+    oscillator.frequency.setValueAtTime(440, ctx.currentTime); // 440Hz (A4 note)
+    gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // volume
 
-      inboxDiv.innerHTML = "⏳ Checking inbox for " + currentTempEmail + "...";
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
 
-      try {
-        const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+    oscillator.start();
 
-        if (!data.messages || data.messages.length === 0) {
-          inboxDiv.innerHTML = "📭 No emails received yet.";
-          return;
-        }
+    // Stop after 0.2 seconds
+    oscillator.stop(ctx.currentTime + 0.2);
 
-        let html = "";
-        for (const msg of data.messages) {
-          const escapedSubject = escapeHtml(msg.subject);
-          const escapedFrom = escapeHtml(msg.from);
-          const escapedTo = escapeHtml(msg.to);
-          const isHtml = msg.content_type === "text/html";
+    oscillator.onended = () => {
+      ctx.close();
+    };
+  } catch (e) {
+    console.warn("Beep sound failed", e);
+  }
+}
 
-          html += `
-            <div class="email">
-              <strong>Subject:</strong> ${escapedSubject}<br>
-              <strong>From:</strong> ${escapedFrom}<br>
-              <strong>To:</strong> ${escapedTo}<br>
-              <strong>Body:</strong><br>
-              <div class="body-content">
-                ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
-              </div>
-            </div>
-          `;
-        }
 
-        inboxDiv.innerHTML = html;
-
-      } catch (err) {
-        inboxDiv.innerHTML = "❌ Failed to fetch inbox. Check your backend.";
-        console.error(err);
-      }
+async function checkInbox() {
+  const inboxDiv = document.getElementById("inbox");
+  document.title = "Messages ("+messages_count+")";
+  if (!currentTempEmail) {
+    // Don't remove previous content if email is not set
+    if (!document.getElementById("email-warning")) {
+      const warning = document.createElement("div");
+      warning.id = "email-warning";
+      warning.textContent = "";
+      inboxDiv.prepend(warning);
     }
+    return;
+  }
+
+  // Remove previous warning if email is now set
+  const prevWarning = document.getElementById("email-warning");
+  if (prevWarning) prevWarning.remove();
+
+  // Create or update loading message at the top
+  let loadingMessage = document.getElementById("loading-message");
+  if (!loadingMessage) {
+    loadingMessage = document.createElement("div");
+    loadingMessage.id = "loading-message";
+    inboxDiv.prepend(loadingMessage);
+  }
+  loadingMessage.innerHTML = `⏳ Checking inbox for ${currentTempEmail}...<br><br>`;
+
+  try {
+    const response = await fetch(`https://sevenstoremailer.onrender.com/inbox?email=${encodeURIComponent(currentTempEmail)}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+
+    loadingMessage.remove();
+
+    if (!data.messages || data.messages.length === 0) {
+      if (!document.getElementById("no-email-message")) {
+        const noEmailMessage = document.createElement("div");
+        noEmailMessage.id = "no-email-message";
+        noEmailMessage.textContent = "📭 No new emails received.";
+        inboxDiv.appendChild(noEmailMessage);
+      }
+      return;
+    } else {
+      const existingNoEmail = document.getElementById("no-email-message");
+      if (existingNoEmail) existingNoEmail.remove();
+    }
+
+    for (const msg of data.messages) {
+      // Use hash of body as unique ID
+      const bodyHash = hashString(msg.body || "");
+
+      if (displayedMessageIds.has(bodyHash)) continue;
+
+      displayedMessageIds.add(bodyHash);
+
+      const escapedSubject = escapeHtml(msg.subject);
+      const escapedFrom = escapeHtml(msg.from);
+      const escapedTo = escapeHtml(msg.to);
+      const enscapeddate = escapeHtml(msg.date)
+      const isHtml = msg.content_type === "text/html";
+
+      const emailDiv = document.createElement("div");
+      emailDiv.classList.add("email");
+
+      emailDiv.innerHTML = `
+        <strong>Subject:</strong> ${escapedSubject}<br>
+        <strong>From:</strong> ${escapedFrom}<br>
+        <strong>To:</strong> ${escapedTo}<br>
+        <strong>Date: ${enscapeddate}</strong></br>
+
+        <strong>Body:</strong><br>
+        <div class="body-content">
+          ${isHtml ? msg.body : `<pre>${escapeHtml(msg.body)}</pre>`}
+        </div>
+      `;
+
+      inboxDiv.insertBefore(emailDiv, inboxDiv.firstChild);
+
+      messages_count=inboxDiv.children.length;
+      
+      if (first_scan == true){
+        continue
+
+      }
+
+      playBeep();
+    }
+
+    first_scan = false;
+
+  } catch (err) {
+    const errorMsg = document.createElement("div");
+    errorMsg.textContent = "❌ Failed to fetch inbox. Check your backend.";
+    inboxDiv.appendChild(errorMsg);
+    console.error(err);
+  }
+}
       
 
     function copyEmail() {
@@ -190,7 +279,8 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
-
+    
+    const interval = setInterval(checkInbox, 7000);
     document.getElementById("random-btn").addEventListener("click", generateRandom);
     document.getElementById("set-email-btn").addEventListener("click", setEmail);
     document.getElementById("copy-btn").addEventListener("click", copyEmail);
